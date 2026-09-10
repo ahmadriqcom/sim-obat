@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MANAJEMEN OBAT - Dinas Kesehatan Kab. Kubu Raya</title>
+  
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* --------------------------------------------------
+       RESET BLOGGER & CSS VARIABLES
+       -------------------------------------------------- */
+    .post-body, .entry-content, #main, .main-inner, .widget {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    :root {
+      --primary: #15803d;         /* Hijau Dinkes */
+      --primary-hover: #166534;
+      --primary-light: #dcfce7;
+      --secondary: #0f766e;
+      --bg-main: #f8fafc;
+      --surface: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --info: #0ea5e9;
+      --info-light: #e0f2fe;
+      --success: #10b981;
+
+      --sidebar-width: 260px;
+      --header-height: 64px;
+      --radius: 10px;
+      --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-dark);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; border: none; outline: none; background: none; font-size: 14px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      outline: none;
+      background: #fff;
+      font-size: 13.5px;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.15);
+    }
+
+    /* LAYOUT SHELL */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 40;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.2;
+      color: var(--primary-hover);
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .sidebar-menu {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+    }
+    .menu-heading {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 10px 6px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      color: #334155;
+      font-weight: 500;
+      border-radius: var(--radius);
+      margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-item:hover {
+      background: var(--bg-main);
+      color: var(--primary);
+    }
+    .nav-item.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .nav-item i { width: 18px; height: 18px; }
+
+    /* MAIN CONTENT */
+    .main-wrapper {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* TOPBAR HEADER */
+    .topbar {
+      height: var(--header-height);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .menu-toggle-btn {
+      display: none;
+      padding: 6px;
+      border-radius: 6px;
+    }
+    .menu-toggle-btn:hover { background: var(--bg-main); }
+    .page-title-badge {
+      font-weight: 600;
+      font-size: 15px;
+      text-transform: uppercase;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .fiscal-badge {
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--secondary);
+    }
+
+    /* PAGE VIEW AREA */
+    .page-content {
+      padding: 24px;
+      flex: 1;
+    }
+
+    /* COMPONENTS */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* METRIC STAT CARDS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 700; }
+    .stat-lbl { font-size: 12px; color: var(--text-muted); }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #f1f5f9; color: #334155; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+
+    /* BADGES */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-success { background: var(--primary-light); color: var(--primary); }
+    .badge-warning { background: var(--warning-light); color: #b45309; }
+    .badge-danger { background: var(--danger-light); color: var(--danger); }
+    .badge-info { background: var(--info-light); color: #0369a1; }
+
+    /* RESPONSIVE TABLE */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th {
+      background: #f8fafc;
+      padding: 12px 14px;
+      font-weight: 600;
+      font-size: 12.5px;
+      color: #475569;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: #1e293b;
+      font-size: 13px;
+    }
+    tr:hover { background-color: #fafafa; }
+
+    /* PAGINATION BAR */
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      gap: 12px;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-md);
+      padding: 24px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    /* TOAST */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 120;
+    }
+    .toast {
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      color: white;
+      font-size: 13px;
+      box-shadow: var(--shadow-md);
+      animation: slideIn 0.2s ease-out;
+    }
+    .toast-success { background: var(--primary); }
+    .toast-error { background: var(--danger); }
+
+    /* LOGIN VIEW */
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08);
+      border: 1px solid rgba(22, 101, 52, 0.1);
+    }
+    .login-brand-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* RESPONSIVE BREAKPOINTS */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrapper { margin-left: 0; }
+      .menu-toggle-btn { display: block; }
+      .sidebar-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 35;
+        display: none;
+      }
+      .sidebar-backdrop.active { display: block; }
+    }
+
+    @media (max-width: 640px) {
+      .page-content { padding: 14px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .responsive-table thead { display: none; }
+      .responsive-table tr {
+        display: block;
+        margin-bottom: 12px;
+        background: #fff;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        padding: 10px 14px;
+      }
+      .responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .responsive-table td:last-child { border-bottom: none; }
+      .responsive-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- VIEW: LOGIN -->
+  <div id="login-view" class="login-wrapper">
+    <div class="login-card">
+      <div class="login-brand-icon">
+        <i data-lucide="pill"></i>
+      </div>
+      <h2 style="text-align: center; font-size: 20px; font-weight: 700; color: var(--primary);">MANAJEMEN OBAT</h2>
+      <p style="text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 24px;">
+        Dinas Kesehatan Kabupaten Kubu Raya
+      </p>
+
+      <form id="login-form">
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; font-weight: 600; display:block; margin-bottom: 6px;">Username</label>
+          <input type="text" id="login-username" required placeholder="Masukkan username">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; font-weight: 600; display:block; margin-bottom: 6px;">Password</label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="login-password" required placeholder="Masukkan password" style="padding-right: 40px;">
+            <button type="button" id="btn-toggle-password" style="position: absolute; right: 10px; color: var(--text-muted); padding: 4px; display: flex; align-items: center;" title="Tampilkan/Sembunyikan Password">
+              <i data-lucide="eye" id="icon-toggle-password" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <label style="font-size: 12px; font-weight: 600; display:block; margin-bottom: 6px;">Tahun Anggaran</label>
+          <select id="login-fiscal-year">
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px;">
+          <i data-lucide="log-in"></i> Masuk ke Sistem
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- VIEW: MAIN APPLICATION SHELL -->
+  <div id="app-shell" class="app-container" style="display: none;">
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon"><i data-lucide="activity"></i></div>
+        <div>
+          <div class="brand-title">MANAJEMEN OBAT</div>
+          <div class="brand-sub">Dinkes Kab. Kubu Raya</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="menu-heading">Utama</div>
+        <a href="#dashboard" class="nav-item active" data-page="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+
+        <div class="menu-heading">Master Data</div>
+        <a href="#master-obat" class="nav-item" data-page="master-obat"><i data-lucide="package"></i> Master Obat</a>
+
+        <div class="menu-heading">Transaksi & Integrasi</div>
+        <a href="#distribusi" class="nav-item" data-page="distribusi"><i data-lucide="truck"></i> Distribusi Obat</a>
+        <a href="#penerimaan" class="nav-item" data-page="penerimaan"><i data-lucide="check-square"></i> Penerimaan</a>
+        <a href="#pemakaian" class="nav-item" data-page="pemakaian"><i data-lucide="file-text"></i> Pemakaian Epus</a>
+        <a href="#import" class="nav-item" data-page="import"><i data-lucide="upload-cloud"></i> Import Data</a>
+
+        <div class="menu-heading">Monitoring & Laporan</div>
+        <a href="#monitoring-stok" class="nav-item" data-page="monitoring-stok"><i data-lucide="bar-chart-2"></i> Stok Riil</a>
+        <a href="#laporan" class="nav-item" data-page="laporan"><i data-lucide="clipboard-list"></i> Laporan BPKAD</a>
+
+        <div style="margin-top: 24px;">
+          <a href="javascript:void(0)" id="btn-logout" class="nav-item" style="color: var(--danger);"><i data-lucide="log-out"></i> Keluar</a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- WRAPPER CONTENT -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="menu-toggle" class="menu-toggle-btn"><i data-lucide="menu"></i></button>
+          <span id="page-title" class="page-title-badge">Dashboard</span>
+        </div>
+        <div class="topbar-right">
+          <span id="badge-fiscal" class="fiscal-badge">TA 2026</span>
+          <div class="user-profile">
+            <div class="user-avatar" id="avatar-initial">A</div>
+            <div>
+              <div id="user-display-name" style="font-weight: 600; font-size: 13px;">User</div>
+              <div id="user-display-role" style="font-size: 11px; color: var(--text-muted);">Admin</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <!-- PAGE 1: DASHBOARD -->
+        <section id="page-dashboard" class="page-section">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#e0f2fe; color:#0284c7;"><i data-lucide="package"></i></div>
+              <div><div class="stat-val" id="stat-total-obat">0</div><div class="stat-lbl">Total Master Obat</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#dcfce7; color:#16a34a;"><i data-lucide="shield-check"></i></div>
+              <div><div class="stat-val" id="stat-safe-stock">0</div><div class="stat-lbl">Total Distribusi Kirim</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#fee2e2; color:#dc2626;"><i data-lucide="alert-triangle"></i></div>
+              <div><div class="stat-val" id="stat-critical-stock">0</div><div class="stat-lbl">Belum Diverifikasi</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#fef3c7; color:#d97706;"><i data-lucide="clock"></i></div>
+              <div><div class="stat-val" id="stat-exp-near">0</div><div class="stat-lbl">Exp &lt; 3 Bulan</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Peringatan Batch Mendekati Kedaluwarsa (&lt; 90 Hari)</h3>
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Kode</th>
+                    <th>Nama Obat</th>
+                    <th>Batch</th>
+                    <th>Kedaluwarsa</th>
+                    <th>Tujuan Puskesmas</th>
+                  </tr>
+                </thead>
+                <tbody id="table-expiring-body">
+                  <tr><td colspan="5" style="text-align:center;">Memuat data...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 2: MASTER OBAT -->
+        <section id="page-master-obat" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Katalog Master Obat</h3>
+              <button class="btn btn-primary btn-sm" id="btn-add-obat"><i data-lucide="plus"></i> Tambah Obat</button>
+            </div>
+            <div style="margin-bottom: 12px; display:flex; gap:10px;">
+              <input type="text" id="search-obat" placeholder="Cari nama atau kode obat..." style="max-width: 320px;">
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Kode Obat</th>
+                    <th>Nama Obat</th>
+                    <th>Satuan</th>
+                    <th>Kategori</th>
+                    <th>Min Stock</th>
+                    <th>Max Stock</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-obat-body"></tbody>
+              </table>
+            </div>
+            <div class="pagination-bar">
+              <button class="btn btn-secondary btn-sm" id="btn-prev-obat" onclick="paginateObat(-1)">Sebelumnya</button>
+              <span id="page-info-obat" style="font-size:12px; font-weight:600;">Halaman 1</span>
+              <button class="btn btn-secondary btn-sm" id="btn-next-obat" onclick="paginateObat(1)">Berikutnya</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 3: DISTRIBUSI -->
+        <section id="page-distribusi" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Distribusi Obat Gudang Farmasi</h3>
+              <button class="btn btn-primary btn-sm" id="btn-add-distribusi"><i data-lucide="send"></i> Catat Distribusi</button>
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>No Dokumen</th>
+                    <th>Tanggal</th>
+                    <th>Puskesmas</th>
+                    <th>Nama Obat</th>
+                    <th>Batch</th>
+                    <th>Expired</th>
+                    <th>Jumlah Kirim</th>
+                  </tr>
+                </thead>
+                <tbody id="table-distribusi-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 4: PENERIMAAN PUSKESMAS -->
+        <section id="page-penerimaan" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Verifikasi Penerimaan Obat di Puskesmas</h3>
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>No Dokumen</th>
+                    <th>Obat & Batch</th>
+                    <th>Kirim</th>
+                    <th>Terima</th>
+                    <th>Selisih</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-penerimaan-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 5: PEMAKAIAN EPUS -->
+        <section id="page-pemakaian" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Pemakaian Obat Riil (Epus)</h3>
+              <button class="btn btn-primary btn-sm" id="btn-add-usage"><i data-lucide="plus"></i> Catat Pemakaian</button>
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>ID Layanan</th>
+                    <th>Tanggal</th>
+                    <th>Puskesmas</th>
+                    <th>Kode Obat</th>
+                    <th>Batch</th>
+                    <th>Jumlah Keluar</th>
+                  </tr>
+                </thead>
+                <tbody id="table-usage-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 6: STOK RIIL -->
+        <section id="page-monitoring-stok" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Monitoring Rekonsiliasi Penerimaan vs Pemakaian</h3>
+              <button class="btn btn-secondary btn-sm" onclick="loadStockMonitoring()"><i data-lucide="refresh-cw"></i> Segarkan</button>
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Kode</th>
+                    <th>Nama Obat</th>
+                    <th>Total Diterima</th>
+                    <th>Total Dipakai</th>
+                    <th>Stok Riil</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="table-stok-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 7: LAPORAN BPKAD -->
+        <section id="page-laporan" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Laporan Persediaan Obat (Format BPKAD)</h3>
+              <button class="btn btn-secondary btn-sm" onclick="window.print()"><i data-lucide="printer"></i> Cetak Laporan</button>
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Kode</th>
+                    <th>Nama Obat</th>
+                    <th>Satuan</th>
+                    <th>Penerimaan</th>
+                    <th>Pemakaian</th>
+                    <th>Saldo Akhir</th>
+                  </tr>
+                </thead>
+                <tbody id="table-laporan-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 8: IMPORT DATA -->
+        <section id="page-import" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Import Data Massal CSV</h3>
+            </div>
+            <p style="color: var(--text-muted); margin-bottom: 16px;">
+              Data yang dimasukkan akan langsung tersimpan cepat ke Supabase Postgres.
+            </p>
+            <div style="margin-bottom: 14px;">
+              <label style="font-weight:600; display:block; margin-bottom:6px;">Tipe Import</label>
+              <select id="import-type">
+                <option value="OBAT">Master Obat (Format: kode_obat,nama_obat,satuan,kategori,min_stock,max_stock)</option>
+                <option value="EPUS">Pemakaian Epus (Format: id_layanan,tanggal_pelayanan,puskesmas_id,kode_obat,batch,jumlah_keluar)</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 14px;">
+              <label style="font-weight:600; display:block; margin-bottom:6px;">Tempel Format CSV (Gunakan Koma)</label>
+              <textarea id="import-raw-csv" rows="6" placeholder="Contoh untuk obat:&#10;PCT-500,Paracetamol 500mg,Tablet,Analgesik,100,2000"></textarea>
+            </div>
+            <button class="btn btn-primary" id="btn-submit-import"><i data-lucide="upload"></i> Simpan ke Supabase</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL MASTER OBAT -->
+  <div id="modal-obat" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h4 style="font-weight:600;" id="modal-obat-title">Tambah Master Obat</h4>
+        <button onclick="closeModal('modal-obat')"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-obat">
+        <input type="hidden" id="obat-id">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Kode Obat</label>
+          <input type="text" id="obat-kode" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Nama Obat</label>
+          <input type="text" id="obat-nama" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Satuan</label>
+          <input type="text" id="obat-satuan" placeholder="Tablet, Botol, Vial" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Kategori</label>
+          <input type="text" id="obat-kategori" placeholder="Generik, Antibiotik, Vaksin" required>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600;">Min Stock</label>
+            <input type="number" id="obat-min" value="100" required>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600;">Max Stock</label>
+            <input type="number" id="obat-max" value="1000" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Simpan Obat</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DISTRIBUSI -->
+  <div id="modal-distribusi" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h4 style="font-weight:600;">Catat Distribusi Gudang Farmasi</h4>
+        <button onclick="closeModal('modal-distribusi')"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-distribusi">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Nomor Dokumen (SBBK)</label>
+          <input type="text" id="dist-nodok" placeholder="SBBK-2026-001" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Puskesmas Tujuan</label>
+          <select id="dist-puskesmas" required></select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Kode Obat</label>
+          <input type="text" id="dist-kode" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Nama Obat</label>
+          <input type="text" id="dist-nama" required>
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:12px;">
+          <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600;">Batch</label>
+            <input type="text" id="dist-batch" required>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px; font-weight:600;">Kedaluwarsa</label>
+            <input type="date" id="dist-exp" required>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px; font-weight:600;">Jumlah Kirim</label>
+          <input type="number" id="dist-qty" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Simpan Distribusi</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PENERIMAAN -->
+  <div id="modal-terima" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h4 style="font-weight:600;">Verifikasi Penerimaan Fisik</h4>
+        <button onclick="closeModal('modal-terima')"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-terima">
+        <input type="hidden" id="terima-id">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Jumlah Kirim Gudang</label>
+          <input type="number" id="terima-kirim" readonly style="background:#f1f5f9;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Jumlah Riil Diterima</label>
+          <input type="number" id="terima-riil" required>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px; font-weight:600;">Catatan Verifikasi</label>
+          <textarea id="terima-catatan" rows="2" placeholder="Catat jika terdapat selisih atau kerusakan..."></textarea>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn btn-danger" id="btn-tolak-terima" style="flex:1; justify-content:center;">Tolak</button>
+          <button type="submit" class="btn btn-primary" style="flex:2; justify-content:center;">Verifikasi Sesuai</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL FORM PEMAKAIAN EPUS -->
+  <div id="modal-usage" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h4 style="font-weight:600;">Catat Pemakaian Obat (Epus)</h4>
+        <button onclick="closeModal('modal-usage')"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-usage">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">ID Resep / Layanan</label>
+          <input type="text" id="use-layanan" placeholder="LYN-2026-001" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Puskesmas</label>
+          <select id="use-puskesmas" required></select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Kode Obat</label>
+          <input type="text" id="use-kode" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Nomor Batch</label>
+          <input type="text" id="use-batch" placeholder="Opsional">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px; font-weight:600;">Jumlah Keluar</label>
+          <input type="number" id="use-qty" required min="1">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Simpan Pemakaian</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT DIRECT SUPABASE CLIENT -->
+  <script>
+    // ========================================================================
+    // 1. KONFIGURASI KONEKSI SUPABASE
+    // PERHATIAN: Gunakan 'anon' / 'public' key (biasanya berawalan eyJhbGciOi... atau sbp_...)
+    // JANGAN gunakan secret key (sb_secret_... / service_role) karena diblokir oleh browser!
+    // ========================================================================
+    const SUPABASE_URL = "https://xjtphbubbxgdxymnhdof.supabase.co";
+    
+    // GANTI nilai di bawah ini dengan anon / public key dari menu Project Settings > API:
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqdHBoYnViYnhnZHh5bW5oZG9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMjc0MjAsImV4cCI6MjEwNDYwMzQyMH0.fU5yx4bJ27RyWREHXZdRSL1P9KhEW8Fc8mc8Tk9SPRo";
+
+    // Validasi pencegahan error secret key di browser
+    if (SUPABASE_ANON_KEY.startsWith("sb_secret_") || SUPABASE_ANON_KEY.includes("service_role")) {
+      alert("PERHATIAN: Anda memasukkan 'Secret Key' (sb_secret_...). Harap ganti dengan 'anon public' key dari Project Settings > API di Supabase agar tidak diblokir browser!");
+    }
+
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const AppState = {
+      user: null,
+      fiscalYear: '2026',
+      puskesmasList: [],
+      obatPage: 0,
+      obatPerPage: 15
+    };
+
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast toast-' + type;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ========================================================================
+    // 2. AUTHENTICATION & SESSION
+    // ========================================================================
+    // Toggle Tampilkan / Sembunyikan Password
+    const btnTogglePwd = document.getElementById('btn-toggle-password');
+    const inputPwd = document.getElementById('login-password');
+    const iconTogglePwd = document.getElementById('icon-toggle-password');
+    if (btnTogglePwd && inputPwd) {
+      btnTogglePwd.addEventListener('click', () => {
+        const isPassword = inputPwd.type === 'password';
+        inputPwd.type = isPassword ? 'text' : 'password';
+        iconTogglePwd.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+        lucide.createIcons();
+      });
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-login-submit');
+      btn.disabled = true;
+      btn.textContent = 'Memverifikasi...';
+
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const fiscalYear = document.getElementById('login-fiscal-year').value;
+
+      try {
+        // Ambil data user berdasarkan username (fleksibel huruf kecil maupun besar pada kolom)
+        let query = db.from('users').select('*');
+        
+        // Coba cari dengan kolom 'username' atau 'Username'
+        let { data: users, error } = await query.ilike('username', username);
+
+        // Jika error kolom username tidak ditemukan, coba cari dengan 'Username'
+        if (error && error.code === '42703') {
+          const retry = await db.from('users').select('*').ilike('Username', username);
+          users = retry.data;
+          error = retry.error;
+        }
+
+        if (error) {
+          console.error('Supabase Error Detail:', error);
+          throw new Error('Database Error: ' + error.message);
+        }
+
+        if (!users || users.length === 0) {
+          throw new Error('Username tidak ditemukan di database.');
+        }
+
+        const user = users[0];
+
+        // Deteksi kolom password fleksibel (password, Password, kata_sandi, atau pass)
+        const userPassword = user.password || user.Password || user.kata_sandi || user.pass;
+
+        if (userPassword === undefined) {
+          throw new Error('Kolom password tidak ditemukan di tabel users. Silakan jalankan query perbaikan di SQL Editor Supabase.');
+        }
+
+        if (String(userPassword) !== String(password)) {
+          throw new Error('Kata sandi yang Anda masukkan salah.');
+        }
+
+        // Standarkan format objek user untuk aplikasi
+        AppState.user = {
+          id: user.id,
+          name: user.name || user.Nama || user.nama || user.username || 'User',
+          role: user.role || user.Role || 'admin',
+          puskesmas_id: user.puskesmas_id || user.Puskesmas_Id || null
+        };
+        AppState.fiscalYear = fiscalYear;
+        sessionStorage.setItem('med_user', JSON.stringify(AppState.user));
+        sessionStorage.setItem('med_year', fiscalYear);
+
+        showToast('Berhasil masuk. Selamat datang!');
+        initializeUI();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="log-in"></i> Masuk ke Sistem';
+        lucide.createIcons();
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      sessionStorage.clear();
+      AppState.user = null;
+      document.getElementById('app-shell').style.display = 'none';
+      document.getElementById('login-view').style.display = 'flex';
+      showToast('Anda telah keluar dari sistem.');
+    });
+
+    // ========================================================================
+    // 3. UI INITIALIZATION & NAVIGATION
+    // ========================================================================
+    async function initializeUI() {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('app-shell').style.display = 'flex';
+
+      document.getElementById('user-display-name').textContent = AppState.user.name;
+      document.getElementById('user-display-role').textContent = AppState.user.role.toUpperCase();
+      document.getElementById('avatar-initial').textContent = AppState.user.name.charAt(0);
+      document.getElementById('badge-fiscal').textContent = 'TA ' + AppState.fiscalYear;
+
+      await loadPuskesmasList();
+      navigate('dashboard');
+      lucide.createIcons();
+    }
+
+    function navigate(pageId) {
+      document.querySelectorAll('.page-section').forEach(sec => sec.style.display = 'none');
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+      const activeNav = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+      if (activeNav) activeNav.classList.add('active');
+
+      const target = document.getElementById('page-' + pageId);
+      if (target) target.style.display = 'block';
+
+      document.getElementById('page-title').textContent = pageId.replace('-', ' ').toUpperCase();
+
+      if (pageId === 'dashboard') loadDashboardData();
+      if (pageId === 'master-obat') loadMasterObat();
+      if (pageId === 'distribusi') loadDistribusi();
+      if (pageId === 'penerimaan') loadPenerimaan();
+      if (pageId === 'pemakaian') loadUsage();
+      if (pageId === 'monitoring-stok') loadStockMonitoring();
+      if (pageId === 'laporan') loadInventoryReport();
+
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-backdrop').classList.remove('active');
+    }
+
+    document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigate(el.getAttribute('data-page'));
+      });
+    });
+
+    document.getElementById('menu-toggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-backdrop').classList.toggle('active');
+    });
+
+    document.getElementById('sidebar-backdrop').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-backdrop').classList.remove('active');
+    });
+
+    // ========================================================================
+    // 4. DATA LOGIC DIRECT TO SUPABASE
+    // ========================================================================
+    async function loadPuskesmasList() {
+      try {
+        const { data, error } = await db.from('puskesmas').select('*').order('nama_puskesmas');
+        if (error) throw error;
+        AppState.puskesmasList = data || [];
+        
+        const distSelect = document.getElementById('dist-puskesmas');
+        const useSelect = document.getElementById('use-puskesmas');
+        distSelect.innerHTML = '<option value="">-- Pilih Puskesmas --</option>';
+        useSelect.innerHTML = '<option value="">-- Pilih Puskesmas --</option>';
+
+        AppState.puskesmasList.forEach(p => {
+          distSelect.innerHTML += `<option value="${p.id}">${p.nama_puskesmas} (${p.kecamatan})</option>`;
+          useSelect.innerHTML += `<option value="${p.id}">${p.nama_puskesmas}</option>`;
+        });
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    // DASHBOARD & EXPIRED ALERTS
+    async function loadDashboardData() {
+      try {
+        // Metrik 1: Total obat
+        const { count: totalObat } = await db.from('master_obat').select('*', { count: 'exact', head: true });
+        document.getElementById('stat-total-obat').textContent = totalObat || 0;
+
+        // Metrik 2: Total distribusi kirim
+        const { count: totalDist } = await db.from('distribusi').select('*', { count: 'exact', head: true });
+        document.getElementById('stat-safe-stock').textContent = totalDist || 0;
+
+        // Metrik 3: Belum diverifikasi
+        const { count: unverified } = await db.from('distribusi').select('*', { count: 'exact', head: true }).eq('status_verifikasi', 'Belum Diterima');
+        document.getElementById('stat-critical-stock').textContent = unverified || 0;
+
+        // Metrik 4 & Tabel Expired < 90 Hari
+        const limitExpDate = new Date();
+        limitExpDate.setDate(limitExpDate.getDate() + 90);
+        const limitExpStr = limitExpDate.toISOString().slice(0, 10);
+
+        const { data: expData, error: expErr } = await db
+          .from('distribusi')
+          .select('kode_obat, nama_obat, batch, expired_date, puskesmas_id')
+          .lte('expired_date', limitExpStr)
+          .order('expired_date', { ascending: true })
+          .limit(10);
+
+        if (!expErr && expData) {
+          document.getElementById('stat-exp-near').textContent = expData.length;
+          const tbody = document.getElementById('table-expiring-body');
+          tbody.innerHTML = '';
+          if (expData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b;">Tidak ada obat mendekati kedaluwarsa (&lt;90 hari).</td></tr>';
+          } else {
+            expData.forEach(x => {
+              tbody.innerHTML += `
+                <tr>
+                  <td data-label="Kode">${x.kode_obat}</td>
+                  <td data-label="Nama">${x.nama_obat}</td>
+                  <td data-label="Batch">${x.batch}</td>
+                  <td data-label="Expired"><span class="badge badge-danger">${x.expired_date}</span></td>
+                  <td data-label="Puskesmas">${x.puskesmas_id}</td>
+                </tr>
+              `;
+            });
+          }
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // MASTER OBAT CRUD & PAGINATION
+    async function loadMasterObat() {
+      const tbody = document.getElementById('table-obat-body');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Memuat katalog obat...</td></tr>';
+      
+      const search = document.getElementById('search-obat').value.trim();
+      const from = AppState.obatPage * AppState.obatPerPage;
+      const to = from + AppState.obatPerPage - 1;
+
+      try {
+        let query = db.from('master_obat').select('*', { count: 'exact' });
+        if (search) {
+          query = query.or(`nama_obat.ilike.%${search}%,kode_obat.ilike.%${search}%`);
+        }
+        const { data, count, error } = await query
+          .order('nama_obat', { ascending: true })
+          .range(from, to);
+
+        if (error) throw error;
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Data obat tidak ditemukan.</td></tr>';
+          return;
+        }
+
+        data.forEach(m => {
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="Kode">${m.kode_obat}</td>
+              <td data-label="Nama">${m.nama_obat}</td>
+              <td data-label="Satuan">${m.satuan}</td>
+              <td data-label="Kategori">${m.kategori}</td>
+              <td data-label="Min">${m.min_stock}</td>
+              <td data-label="Max">${m.max_stock}</td>
+              <td data-label="Aksi">
+                <button class="btn btn-sm btn-secondary" onclick="editObat('${m.id}', '${m.kode_obat}', '${m.nama_obat}', '${m.satuan}', '${m.kategori}', ${m.min_stock}, ${m.max_stock})">Edit</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        const maxPage = Math.ceil((count || 1) / AppState.obatPerPage);
+        document.getElementById('page-info-obat').textContent = `Halaman ${AppState.obatPage + 1} dari ${maxPage}`;
+        document.getElementById('btn-prev-obat').disabled = (AppState.obatPage === 0);
+        document.getElementById('btn-next-obat').disabled = (AppState.obatPage + 1 >= maxPage);
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">${e.message}</td></tr>`;
+      }
+    }
+
+    function paginateObat(dir) {
+      AppState.obatPage += dir;
+      if (AppState.obatPage < 0) AppState.obatPage = 0;
+      loadMasterObat();
+    }
+
+    let searchDebounce;
+    document.getElementById('search-obat').addEventListener('input', () => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        AppState.obatPage = 0;
+        loadMasterObat();
+      }, 300);
+    });
+
+    document.getElementById('btn-add-obat').addEventListener('click', () => {
+      document.getElementById('form-obat').reset();
+      document.getElementById('obat-id').value = '';
+      document.getElementById('modal-obat-title').textContent = 'Tambah Master Obat';
+      openModal('modal-obat');
+    });
+
+    function editObat(id, kode, nama, satuan, kategori, min, max) {
+      document.getElementById('obat-id').value = id;
+      document.getElementById('obat-kode').value = kode;
+      document.getElementById('obat-nama').value = nama;
+      document.getElementById('obat-satuan').value = satuan;
+      document.getElementById('obat-kategori').value = kategori;
+      document.getElementById('obat-min').value = min;
+      document.getElementById('obat-max').value = max;
+      document.getElementById('modal-obat-title').textContent = 'Ubah Data Obat';
+      openModal('modal-obat');
+    }
+
+    document.getElementById('form-obat').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('obat-id').value;
+      const payload = {
+        kode_obat: document.getElementById('obat-kode').value.trim(),
+        nama_obat: document.getElementById('obat-nama').value.trim(),
+        satuan: document.getElementById('obat-satuan').value.trim(),
+        kategori: document.getElementById('obat-kategori').value.trim(),
+        min_stock: parseInt(document.getElementById('obat-min').value) || 0,
+        max_stock: parseInt(document.getElementById('obat-max').value) || 0
+      };
+
+      try {
+        let res;
+        if (id) {
+          res = await db.from('master_obat').update(payload).eq('id', id);
+        } else {
+          res = await db.from('master_obat').insert([payload]);
+        }
+        if (res.error) throw res.error;
+
+        showToast('Data master obat berhasil disimpan.');
+        closeModal('modal-obat');
+        loadMasterObat();
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // DISTRIBUSI
+    async function loadDistribusi() {
+      const tbody = document.getElementById('table-distribusi-body');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Memuat data distribusi...</td></tr>';
+      try {
+        const { data, error } = await db
+          .from('distribusi')
+          .select('*')
+          .order('tanggal', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Belum ada pengiriman distribusi.</td></tr>';
+          return;
+        }
+
+        data.forEach(d => {
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="No Dok">${d.no_dokumen}</td>
+              <td data-label="Tanggal">${(d.tanggal || '').slice(0, 10)}</td>
+              <td data-label="Puskesmas">${d.puskesmas_id}</td>
+              <td data-label="Obat">${d.nama_obat}</td>
+              <td data-label="Batch">${d.batch}</td>
+              <td data-label="Expired">${(d.expired_date || '').slice(0, 10)}</td>
+              <td data-label="Jumlah">${d.jumlah_kirim}</td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:red;">${e.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('btn-add-distribusi').addEventListener('click', () => openModal('modal-distribusi'));
+
+    document.getElementById('form-distribusi').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const payload = {
+          no_dokumen: document.getElementById('dist-nodok').value.trim(),
+          puskesmas_id: document.getElementById('dist-puskesmas').value,
+          kode_obat: document.getElementById('dist-kode').value.trim(),
+          nama_obat: document.getElementById('dist-nama').value.trim(),
+          batch: document.getElementById('dist-batch').value.trim(),
+          expired_date: document.getElementById('dist-exp').value,
+          jumlah_kirim: parseInt(document.getElementById('dist-qty').value) || 0,
+          status_verifikasi: 'Belum Diterima'
+        };
+
+        const { error } = await db.from('distribusi').insert([payload]);
+        if (error) throw error;
+
+        showToast('Dokumen distribusi berhasil dicatat ke Supabase.');
+        closeModal('modal-distribusi');
+        loadDistribusi();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // PENERIMAAN PUSKESMAS & VERIFIKASI
+    async function loadPenerimaan() {
+      const tbody = document.getElementById('table-penerimaan-body');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Memuat penerimaan...</td></tr>';
+      try {
+        const { data, error } = await db
+          .from('distribusi')
+          .select('*')
+          .order('tanggal', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Tidak ada dokumen penerimaan.</td></tr>';
+          return;
+        }
+
+        data.forEach(p => {
+          let badge = 'badge-info';
+          if (p.status_verifikasi === 'Sesuai') badge = 'badge-success';
+          if (p.status_verifikasi === 'Selisih') badge = 'badge-warning';
+          if (p.status_verifikasi === 'Ditolak') badge = 'badge-danger';
+
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="No Dok">${p.no_dokumen}</td>
+              <td data-label="Obat & Batch">${p.kode_obat} (${p.batch})</td>
+              <td data-label="Kirim">${p.jumlah_kirim}</td>
+              <td data-label="Terima">${p.jumlah_terima || 0}</td>
+              <td data-label="Selisih">${p.selisih || 0}</td>
+              <td data-label="Status"><span class="badge ${badge}">${p.status_verifikasi}</span></td>
+              <td data-label="Aksi">
+                ${p.status_verifikasi === 'Belum Diterima' ? 
+                  `<button class="btn btn-sm btn-primary" onclick="openVerifikasi('${p.id}', ${p.jumlah_kirim})">Verifikasi</button>` : 
+                  `<span style="color:#64748b; font-size:12px;">Selesai</span>`}
+              </td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:red;">${e.message}</td></tr>`;
+      }
+    }
+
+    function openVerifikasi(id, jmlKirim) {
+      document.getElementById('terima-id').value = id;
+      document.getElementById('terima-kirim').value = jmlKirim;
+      document.getElementById('terima-riil').value = jmlKirim;
+      openModal('modal-terima');
+    }
+
+    document.getElementById('form-terima').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const id = document.getElementById('terima-id').value;
+        const jmlKirim = parseInt(document.getElementById('terima-kirim').value) || 0;
+        const jmlTerima = parseInt(document.getElementById('terima-riil').value) || 0;
+        const catatan = document.getElementById('terima-catatan').value;
+        const selisih = jmlTerima - jmlKirim;
+        const status = selisih === 0 ? 'Sesuai' : 'Selisih';
+
+        const { error } = await db.from('distribusi').update({
+          jumlah_terima: jmlTerima,
+          selisih: selisih,
+          status_verifikasi: status,
+          catatan: catatan
+        }).eq('id', id);
+
+        if (error) throw error;
+        showToast('Penerimaan berhasil diverifikasi.');
+        closeModal('modal-terima');
+        loadPenerimaan();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('btn-tolak-terima').addEventListener('click', async () => {
+      if (!confirm('Tolak pengiriman dokumen ini?')) return;
+      try {
+        const id = document.getElementById('terima-id').value;
+        const { error } = await db.from('distribusi').update({
+          jumlah_terima: 0,
+          status_verifikasi: 'Ditolak',
+          catatan: document.getElementById('terima-catatan').value
+        }).eq('id', id);
+
+        if (error) throw error;
+        showToast('Dokumen berhasil ditolak.');
+        closeModal('modal-terima');
+        loadPenerimaan();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // PEMAKAIAN EPUS
+    async function loadUsage() {
+      const tbody = document.getElementById('table-usage-body');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Memuat data pemakaian...</td></tr>';
+      try {
+        const { data, error } = await db
+          .from('pemakaian_epus')
+          .select('*')
+          .order('tanggal_pelayanan', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+        tbody.innerHTML = '';
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Belum ada data pemakaian tercatat.</td></tr>';
+          return;
+        }
+
+        data.forEach(u => {
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="ID Layanan">${u.id_layanan}</td>
+              <td data-label="Tanggal">${(u.tanggal_pelayanan || '').slice(0, 10)}</td>
+              <td data-label="Puskesmas">${u.puskesmas_id || '-'}</td>
+              <td data-label="Kode Obat">${u.kode_obat}</td>
+              <td data-label="Batch">${u.batch || '-'}</td>
+              <td data-label="Jumlah Keluar">${u.jumlah_keluar}</td>
+            </tr>
+          `;
+        });
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red;">${e.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('btn-add-usage').addEventListener('click', () => openModal('modal-usage'));
+
+    document.getElementById('form-usage').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const payload = {
+          id_layanan: document.getElementById('use-layanan').value.trim(),
+          puskesmas_id: document.getElementById('use-puskesmas').value,
+          kode_obat: document.getElementById('use-kode').value.trim(),
+          batch: document.getElementById('use-batch').value.trim() || '-',
+          jumlah_keluar: parseInt(document.getElementById('use-qty').value) || 1
+        };
+
+        const { error } = await db.from('pemakaian_epus').insert([payload]);
+        if (error) throw error;
+
+        showToast('Catatan pemakaian berhasil disimpan.');
+        closeModal('modal-usage');
+        loadUsage();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // MONITORING STOK RIIL & LAPORAN BPKAD
+    async function loadStockMonitoring() {
+      const tbody = document.getElementById('table-stok-body');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Merekonsiliasi stok Postgres...</td></tr>';
+      try {
+        const [{ data: obats }, { data: dists }, { data: usages }] = await Promise.all([
+          db.from('master_obat').select('kode_obat, nama_obat, min_stock'),
+          db.from('distribusi').select('kode_obat, jumlah_terima'),
+          db.from('pemakaian_epus').select('kode_obat, jumlah_keluar')
+        ]);
+
+        const mapTerima = {};
+        (dists || []).forEach(d => {
+          mapTerima[d.kode_obat] = (mapTerima[d.kode_obat] || 0) + (d.jumlah_terima || 0);
+        });
+
+        const mapPakai = {};
+        (usages || []).forEach(u => {
+          mapPakai[u.kode_obat] = (mapPakai[u.kode_obat] || 0) + (u.jumlah_keluar || 0);
+        });
+
+        tbody.innerHTML = '';
+        (obats || []).forEach(o => {
+          const terima = mapTerima[o.kode_obat] || 0;
+          const pakai = mapPakai[o.kode_obat] || 0;
+          const stokRiil = terima - pakai;
+
+          let badgeClass = 'badge-success';
+          let statusText = 'Aman';
+          if (stokRiil <= (o.min_stock || 100)) {
+            badgeClass = 'badge-danger';
+            statusText = 'Kritis';
+          }
+
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="Kode">${o.kode_obat}</td>
+              <td data-label="Nama">${o.nama_obat}</td>
+              <td data-label="Total Diterima">${terima}</td>
+              <td data-label="Total Dipakai">${pakai}</td>
+              <td data-label="Stok Riil" style="font-weight:700;">${stokRiil}</td>
+              <td data-label="Status"><span class="badge ${badgeClass}">${statusText}</span></td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red;">${e.message}</td></tr>`;
+      }
+    }
+
+    async function loadInventoryReport() {
+      const tbody = document.getElementById('table-laporan-body');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Menyiapkan rekapitulasi persediaan...</td></tr>';
+      try {
+        const [{ data: obats }, { data: dists }, { data: usages }] = await Promise.all([
+          db.from('master_obat').select('kode_obat, nama_obat, satuan'),
+          db.from('distribusi').select('kode_obat, jumlah_terima'),
+          db.from('pemakaian_epus').select('kode_obat, jumlah_keluar')
+        ]);
+
+        const mapTerima = {};
+        (dists || []).forEach(d => {
+          mapTerima[d.kode_obat] = (mapTerima[d.kode_obat] || 0) + (d.jumlah_terima || 0);
+        });
+
+        const mapPakai = {};
+        (usages || []).forEach(u => {
+          mapPakai[u.kode_obat] = (mapPakai[u.kode_obat] || 0) + (u.jumlah_keluar || 0);
+        });
+
+        tbody.innerHTML = '';
+        (obats || []).forEach(o => {
+          const terima = mapTerima[o.kode_obat] || 0;
+          const pakai = mapPakai[o.kode_obat] || 0;
+          const saldo = terima - pakai;
+
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="Kode">${o.kode_obat}</td>
+              <td data-label="Nama">${o.nama_obat}</td>
+              <td data-label="Satuan">${o.satuan}</td>
+              <td data-label="Penerimaan">${terima}</td>
+              <td data-label="Pemakaian">${pakai}</td>
+              <td data-label="Saldo Akhir" style="font-weight:700;">${saldo}</td>
+            </tr>
+          `;
+        });
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red;">${e.message}</td></tr>`;
+      }
+    }
+
+    // MASS BULK IMPORT
+    document.getElementById('btn-submit-import').addEventListener('click', async () => {
+      const type = document.getElementById('import-type').value;
+      const text = document.getElementById('import-raw-csv').value.trim();
+      if (!text) {
+        showToast('Masukkan teks format CSV terlebih dahulu.', 'error');
+        return;
+      }
+
+      const lines = text.split('\n');
+      const rows = [];
+
+      lines.forEach(line => {
+        const p = line.split(',').map(item => item.trim());
+        if (type === 'OBAT' && p.length >= 2) {
+          rows.push({
+            kode_obat: p[0],
+            nama_obat: p[1],
+            satuan: p[2] || 'Tablet',
+            kategori: p[3] || 'Generik',
+            min_stock: parseInt(p[4]) || 100,
+            max_stock: parseInt(p[5]) || 1000
+          });
+        } else if (type === 'EPUS' && p.length >= 4) {
+          rows.push({
+            id_layanan: p[0],
+            tanggal_pelayanan: p[1],
+            puskesmas_id: p[2],
+            kode_obat: p[3],
+            batch: p[4] || '-',
+            jumlah_keluar: parseInt(p[5]) || 1
+          });
+        }
+      });
+
+      if (rows.length === 0) {
+        showToast('Format baris CSV tidak sesuai.', 'error');
+        return;
+      }
+
+      try {
+        const table = (type === 'OBAT') ? 'master_obat' : 'pemakaian_epus';
+        const { error } = await db.from(table).insert(rows);
+        if (error) throw error;
+
+        showToast(`Berhasil mengimpor ${rows.length} data ke Supabase!`);
+        document.getElementById('import-raw-csv').value = '';
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // INITIAL AUTOLOGIN CHECK
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = sessionStorage.getItem('med_user');
+      const savedYear = sessionStorage.getItem('med_year');
+
+      if (savedUser) {
+        AppState.user = JSON.parse(savedUser);
+        AppState.fiscalYear = savedYear || '2026';
+        initializeUI();
+      } else {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
