@@ -553,6 +553,7 @@
 
         <div class="menu-heading">Master Data</div>
         <a href="#master-obat" class="nav-item" data-page="master-obat"><i data-lucide="package"></i> Master Obat</a>
+        <a href="#master-puskesmas" class="nav-item" data-page="master-puskesmas"><i data-lucide="building-2"></i> Master Puskesmas</a>
 
         <div class="menu-heading">Transaksi & Integrasi</div>
         <a href="#distribusi" class="nav-item" data-page="distribusi"><i data-lucide="truck"></i> Distribusi Obat</a>
@@ -664,6 +665,34 @@
               <button class="btn btn-secondary btn-sm" id="btn-prev-obat" onclick="paginateObat(-1)">Sebelumnya</button>
               <span id="page-info-obat" style="font-size:12px; font-weight:600;">Halaman 1</span>
               <button class="btn btn-secondary btn-sm" id="btn-next-obat" onclick="paginateObat(1)">Berikutnya</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 2B: MASTER PUSKESMAS -->
+        <section id="page-master-puskesmas" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Katalog Master Puskesmas</h3>
+              <button class="btn btn-primary btn-sm" id="btn-add-puskesmas"><i data-lucide="plus"></i> Tambah Puskesmas</button>
+            </div>
+            <div style="margin-bottom: 12px; display:flex; gap:10px;">
+              <input type="text" id="search-puskesmas" placeholder="Cari nama atau kecamatan..." style="max-width: 320px;">
+            </div>
+            <div class="table-container">
+              <table class="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Kode / ID</th>
+                    <th>Nama Puskesmas</th>
+                    <th>Kecamatan</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-puskesmas-body">
+                  <tr><td colspan="4" style="text-align:center;">Memuat data puskesmas...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
@@ -857,6 +886,32 @@
           </div>
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Simpan Obat</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL MASTER PUSKESMAS -->
+  <div id="modal-puskesmas" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h4 style="font-weight:600;" id="modal-puskesmas-title">Tambah Master Puskesmas</h4>
+        <button onclick="closeModal('modal-puskesmas')"><i data-lucide="x"></i></button>
+      </div>
+      <form id="form-puskesmas">
+        <input type="hidden" id="pkm-id-old">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Kode / ID Puskesmas</label>
+          <input type="text" id="pkm-kode" placeholder="Misal: PKM-KBR-01" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:600;">Nama Puskesmas</label>
+          <input type="text" id="pkm-nama" placeholder="Misal: Puskesmas Sungai Raya" required>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px; font-weight:600;">Kecamatan</label>
+          <input type="text" id="pkm-kecamatan" placeholder="Misal: Sungai Raya" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Simpan Data Puskesmas</button>
       </form>
     </div>
   </div>
@@ -1128,6 +1183,7 @@
 
       if (pageId === 'dashboard') loadDashboardData();
       if (pageId === 'master-obat') loadMasterObat();
+      if (pageId === 'master-puskesmas') loadMasterPuskesmas();
       if (pageId === 'distribusi') loadDistribusi();
       if (pageId === 'penerimaan') loadPenerimaan();
       if (pageId === 'pemakaian') loadUsage();
@@ -1158,25 +1214,156 @@
     // ========================================================================
     // 4. DATA LOGIC DIRECT TO SUPABASE
     // ========================================================================
+    let pkmTableName = 'master_puskesmas';
+
     async function loadPuskesmasList() {
       try {
-        const { data, error } = await db.from('puskesmas').select('*').order('nama_puskesmas');
+        let { data, error } = await db.from('master_puskesmas').select('*');
+        if (error && error.code === 'PGRST205') {
+          pkmTableName = 'puskesmas';
+          const fallback = await db.from('puskesmas').select('*');
+          data = fallback.data;
+          error = fallback.error;
+        }
+
         if (error) throw error;
         AppState.puskesmasList = data || [];
         
         const distSelect = document.getElementById('dist-puskesmas');
         const useSelect = document.getElementById('use-puskesmas');
-        distSelect.innerHTML = '<option value="">-- Pilih Puskesmas --</option>';
-        useSelect.innerHTML = '<option value="">-- Pilih Puskesmas --</option>';
+        if (distSelect) distSelect.innerHTML = '<option value="">-- Pilih Puskesmas --</option>';
+        if (useSelect) useSelect.innerHTML = '<option value="">-- Pilih Puskesmas --</option>';
 
         AppState.puskesmasList.forEach(p => {
-          distSelect.innerHTML += `<option value="${p.id}">${p.nama_puskesmas} (${p.kecamatan})</option>`;
-          useSelect.innerHTML += `<option value="${p.id}">${p.nama_puskesmas}</option>`;
+          const id = p.id || p.kode_puskesmas || p.kode || p.nama_puskesmas;
+          const nama = p.nama_puskesmas || p.nama || p.puskesmas || id;
+          const kec = p.kecamatan ? ` (${p.kecamatan})` : '';
+
+          if (distSelect) distSelect.innerHTML += `<option value="${id}">${nama}${kec}</option>`;
+          if (useSelect) useSelect.innerHTML += `<option value="${id}">${nama}</option>`;
         });
       } catch(e) {
-        console.error(e);
+        console.error('Gagal memuat puskesmas:', e);
       }
     }
+
+    async function loadMasterPuskesmas() {
+      const tbody = document.getElementById('table-puskesmas-body');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data puskesmas...</td></tr>';
+
+      const search = (document.getElementById('search-puskesmas').value || '').trim().toLowerCase();
+
+      try {
+        let { data, error } = await db.from(pkmTableName).select('*');
+        if (error && error.code === 'PGRST205' && pkmTableName === 'master_puskesmas') {
+          pkmTableName = 'puskesmas';
+          const retry = await db.from(pkmTableName).select('*');
+          data = retry.data;
+          error = retry.error;
+        }
+
+        if (error) throw error;
+        tbody.innerHTML = '';
+
+        let list = data || [];
+        if (search) {
+          list = list.filter(p => {
+            const nama = (p.nama_puskesmas || p.nama || '').toLowerCase();
+            const kec = (p.kecamatan || '').toLowerCase();
+            const id = (p.id || p.kode_puskesmas || '').toLowerCase();
+            return nama.includes(search) || kec.includes(search) || id.includes(search);
+          });
+        }
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b;">Data Puskesmas tidak ditemukan.</td></tr>';
+          return;
+        }
+
+        list.forEach(p => {
+          const id = p.id || p.kode_puskesmas || p.kode || '-';
+          const nama = p.nama_puskesmas || p.nama || p.puskesmas || '-';
+          const kec = p.kecamatan || '-';
+
+          tbody.innerHTML += `
+            <tr>
+              <td data-label="Kode / ID"><strong>${id}</strong></td>
+              <td data-label="Nama Puskesmas">${nama}</td>
+              <td data-label="Kecamatan">${kec}</td>
+              <td data-label="Aksi">
+                <button class="btn btn-sm btn-secondary" onclick="editPuskesmas('${id}', '${nama.replace(/'/g, "\\'")}', '${kec.replace(/'/g, "\\'")}')">
+                  <i data-lucide="edit-3" style="width:14px;height:14px;"></i> Edit
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        lucide.createIcons();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">${err.message}</td></tr>`;
+      }
+    }
+
+    let searchPkmDebounce;
+    document.getElementById('search-puskesmas').addEventListener('input', () => {
+      clearTimeout(searchPkmDebounce);
+      searchPkmDebounce = setTimeout(loadMasterPuskesmas, 300);
+    });
+
+    document.getElementById('btn-add-puskesmas').addEventListener('click', () => {
+      document.getElementById('form-puskesmas').reset();
+      document.getElementById('pkm-id-old').value = '';
+      document.getElementById('pkm-kode').disabled = false;
+      document.getElementById('modal-puskesmas-title').textContent = 'Tambah Master Puskesmas';
+      openModal('modal-puskesmas');
+    });
+
+    function editPuskesmas(id, nama, kecamatan) {
+      document.getElementById('pkm-id-old').value = id;
+      document.getElementById('pkm-kode').value = id;
+      document.getElementById('pkm-kode').disabled = true;
+      document.getElementById('pkm-nama').value = nama;
+      document.getElementById('pkm-kecamatan').value = kecamatan;
+      document.getElementById('modal-puskesmas-title').textContent = 'Ubah Data Puskesmas';
+      openModal('modal-puskesmas');
+    }
+
+    document.getElementById('form-puskesmas').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const oldId = document.getElementById('pkm-id-old').value;
+      const kode = document.getElementById('pkm-kode').value.trim();
+      const nama = document.getElementById('pkm-nama').value.trim();
+      const kec = document.getElementById('pkm-kecamatan').value.trim();
+
+      const payload = {
+        id: kode,
+        nama_puskesmas: nama,
+        kecamatan: kec
+      };
+
+      try {
+        let res;
+        if (oldId) {
+          // Update data puskesmas
+          res = await db.from(pkmTableName).update({
+            nama_puskesmas: nama,
+            kecamatan: kec
+          }).eq('id', oldId);
+        } else {
+          // Tambah data baru
+          res = await db.from(pkmTableName).insert([payload]);
+        }
+
+        if (res.error) throw res.error;
+
+        showToast('Data puskesmas berhasil disimpan.');
+        closeModal('modal-puskesmas');
+        await loadPuskesmasList();
+        loadMasterPuskesmas();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
 
     // DASHBOARD & EXPIRED ALERTS
     async function loadDashboardData() {
